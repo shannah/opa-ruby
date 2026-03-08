@@ -5,7 +5,8 @@ require_relative "lib/opa/version"
 Gem::Specification.new do |spec|
   spec.name = "opa-ruby"
   spec.version = OPA::VERSION
-  spec.authors = ["OPA Ruby Contributors"]
+  spec.authors = ["Steve Hannah"]
+  spec.email = ["steve@weblite.ca"]
   spec.summary = "A Ruby library for generating Open Prompt Archive (OPA) files"
   spec.description = "Provides tools for building, signing, and verifying OPA archives — " \
                      "portable ZIP-based packages for AI agent prompts, session history, and data assets."
