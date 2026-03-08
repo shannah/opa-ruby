@@ -25,6 +25,11 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sed -i "s/VERSION = .*/VERSION = \"${VERSION}\"/" lib/opa/version.rb
+          echo "GEM_VERSION=${VERSION}" >> "$GITHUB_ENV"
       - name: Build gem
         run: gem build opa-ruby.gemspec
       - name: Push to RubyGems
