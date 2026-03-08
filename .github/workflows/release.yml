@@ -1,0 +1,37 @@
+name: Release Gem
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+      - run: bundle exec rspec
+
+  push:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+      - name: Build gem
+        run: gem build opa-ruby.gemspec
+      - name: Push to RubyGems
+        run: gem push opa-ruby-*.gem
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+      - name: Upload gem to GitHub Release
+        run: gh release upload "${{ github.event.release.tag_name }}" opa-ruby-*.gem
+        env:
+          GH_TOKEN: ${{ github.token }}
