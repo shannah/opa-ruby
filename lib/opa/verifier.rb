@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "zip"
 require "openssl"
 require "base64"
 require "digest"
@@ -16,11 +15,12 @@ module OPA
 
     def initialize(io_or_path)
       @raw_entries = {}
-      if io_or_path.is_a?(String)
-        File.open(io_or_path, "rb") { |f| read_zip(f) }
-      else
-        read_zip(io_or_path)
-      end
+      data = if io_or_path.is_a?(String)
+               File.binread(io_or_path)
+             else
+               io_or_path.read
+             end
+      read_zip(data)
     end
 
     def signed?
@@ -98,15 +98,11 @@ module OPA
 
     private
 
-    def read_zip(io)
-      data = io.read
-      Zip::InputStream.open(StringIO.new(data)) do |zip|
-        while (entry = zip.get_next_entry)
-          next if entry.directory?
-          path = entry.name
-          validate_path!(path)
-          @raw_entries[path] = zip.read
-        end
+    def read_zip(data)
+      entries = ZipIO::Reader.read(data)
+      entries.each do |path, content|
+        validate_path!(path)
+        @raw_entries[path] = content
       end
 
       manifest_content = @raw_entries["META-INF/MANIFEST.MF"]

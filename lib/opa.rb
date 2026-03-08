@@ -2,6 +2,7 @@
 
 require_relative "opa/version"
 require_relative "opa/manifest"
+require_relative "opa/zip_io"
 require_relative "opa/archive"
 require_relative "opa/signer"
 require_relative "opa/verifier"

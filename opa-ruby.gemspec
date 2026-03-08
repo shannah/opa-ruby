@@ -18,8 +18,6 @@ Gem::Specification.new do |spec|
   spec.executables = ["opa"]
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "rubyzip", ">= 2.0", "< 3.0"
-
   spec.add_development_dependency "rspec", "~> 3.0"
   spec.add_development_dependency "rake", "~> 13.0"
 end

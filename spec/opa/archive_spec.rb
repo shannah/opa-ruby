@@ -128,18 +128,14 @@ end
 # Helper: create a tampered ZIP where one entry's content is replaced
 # but the signature files are left intact.
 def tamper_with_entry(zip_data, entry_name, new_content)
-  output = StringIO.new
-  Zip::OutputStream.write_buffer(output) do |zip|
-    Zip::InputStream.open(StringIO.new(zip_data)) do |input|
-      while (entry = input.get_next_entry)
-        zip.put_next_entry(entry.name)
-        if entry.name == entry_name
-          zip.write(new_content)
-        else
-          zip.write(input.read)
-        end
-      end
+  entries = OPA::ZipIO::Reader.read(zip_data)
+  writer = OPA::ZipIO::Writer.new
+  entries.each do |name, content|
+    if name == entry_name
+      writer.add_entry(name, new_content)
+    else
+      writer.add_entry(name, content)
     end
   end
-  output.string
+  writer.to_bytes
 end

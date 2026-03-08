@@ -62,15 +62,11 @@ RSpec.describe OPA::Verifier do
   describe "path traversal protection" do
     it "rejects paths with .." do
       # Build a malicious ZIP manually
-      buf = StringIO.new
-      Zip::OutputStream.write_buffer(buf) do |zip|
-        zip.put_next_entry("META-INF/MANIFEST.MF")
-        zip.write("Manifest-Version: 1.0\nOPA-Version: 0.1\n\n")
-        zip.put_next_entry("../etc/passwd")
-        zip.write("malicious")
-      end
+      writer = OPA::ZipIO::Writer.new
+      writer.add_entry("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\nOPA-Version: 0.1\n\n")
+      writer.add_entry("../etc/passwd", "malicious")
 
-      expect { OPA::Verifier.new(StringIO.new(buf.string)) }.to raise_error(OPA::SignatureError, /traversal/)
+      expect { OPA::Verifier.new(StringIO.new(writer.to_bytes)) }.to raise_error(OPA::SignatureError, /traversal/)
     end
   end
 

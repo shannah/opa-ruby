@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "zip"
 require "digest"
 
 module OPA
@@ -51,51 +50,42 @@ module OPA
     private
 
     def write_to_stream(io)
-      buffer = StringIO.new
-      build_zip(buffer)
-      io.write(buffer.string)
-    end
+      zip = ZipIO::Writer.new
 
-    def build_zip(io)
-      Zip::OutputStream.write_buffer(io) do |zip|
-        # Compute digests for all entries if signing
-        entry_digests = {}
-        @entries.each do |path, content|
-          data = content.is_a?(IO) ? content.read : content
-          entry_digests[path] = data
-        end
+      # Resolve all entry content
+      entry_data = {}
+      @entries.each do |path, content|
+        entry_data[path] = content.is_a?(IO) ? content.read : content
+      end
 
-        # Build manifest with digests if signing
-        if @signer
-          entry_digests.each do |path, data|
-            digest = @signer.digest(data)
-            @manifest.add_entry(path, { "#{@signer.digest_name}-Digest" => digest })
-          end
-        end
-
-        manifest_content = @manifest.to_s
-
-        # Write manifest
-        zip.put_next_entry("META-INF/MANIFEST.MF")
-        zip.write(manifest_content)
-
-        # Write signature files if signing
-        if @signer
-          sf_content = @signer.signature_file(manifest_content)
-          zip.put_next_entry("META-INF/SIGNATURE.SF")
-          zip.write(sf_content)
-
-          sig_block = @signer.signature_block(sf_content)
-          zip.put_next_entry("META-INF/SIGNATURE#{@signer.block_extension}")
-          zip.write(sig_block)
-        end
-
-        # Write all content entries
-        entry_digests.each do |path, data|
-          zip.put_next_entry(path)
-          zip.write(data)
+      # Build manifest with digests if signing
+      if @signer
+        entry_data.each do |path, data|
+          digest = @signer.digest(data)
+          @manifest.add_entry(path, { "#{@signer.digest_name}-Digest" => digest })
         end
       end
+
+      manifest_content = @manifest.to_s
+
+      # Write manifest
+      zip.add_entry("META-INF/MANIFEST.MF", manifest_content)
+
+      # Write signature files if signing
+      if @signer
+        sf_content = @signer.signature_file(manifest_content)
+        zip.add_entry("META-INF/SIGNATURE.SF", sf_content)
+
+        sig_block = @signer.signature_block(sf_content)
+        zip.add_entry("META-INF/SIGNATURE#{@signer.block_extension}", sig_block)
+      end
+
+      # Write all content entries
+      entry_data.each do |path, data|
+        zip.add_entry(path, data)
+      end
+
+      io.write(zip.to_bytes)
     end
   end
 end
