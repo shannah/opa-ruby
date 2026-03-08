@@ -13,7 +13,9 @@ Gem::Specification.new do |spec|
   spec.license = "MIT"
   spec.required_ruby_version = ">= 2.7.0"
 
-  spec.files = Dir["lib/**/*.rb", "LICENSE", "README.md"]
+  spec.files = Dir["lib/**/*.rb", "bin/*", "LICENSE", "README.md"]
+  spec.bindir = "bin"
+  spec.executables = ["opa"]
   spec.require_paths = ["lib"]
 
   spec.add_dependency "rubyzip", ">= 2.0", "< 3.0"
