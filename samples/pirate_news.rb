@@ -13,6 +13,7 @@
 
 require "net/http"
 require "uri"
+require "openssl"
 require_relative "../lib/opa"
 
 RSS_URL = "https://news.google.com/rss/search?q=artificial+intelligence&hl=en-US&gl=US&ceid=US:en"
@@ -21,7 +22,19 @@ RSS_URL = "https://news.google.com/rss/search?q=artificial+intelligence&hl=en-US
 
 puts "Fetching AI news RSS feed..."
 uri = URI(RSS_URL)
-response = Net::HTTP.get(uri)
+http = Net::HTTP.new(uri.host, uri.port)
+http.use_ssl = true
+http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+# Some systems have CRL checking issues; fall back to relaxed verification
+begin
+  response = http.request(Net::HTTP::Get.new(uri)).body
+rescue OpenSSL::SSL::SSLError => e
+  warn "  SSL strict mode failed (#{e.message.split("state=").last}), retrying without CRL check..."
+  http = Net::HTTP.new(uri.host, uri.port)
+  http.use_ssl = true
+  http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+  response = http.request(Net::HTTP::Get.new(uri)).body
+end
 puts "  Fetched #{response.bytesize} bytes."
 
 # -- Build the prompt ----------------------------------------------------------
